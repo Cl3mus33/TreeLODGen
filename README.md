@@ -157,6 +157,8 @@ CRC32, generated without errors and the result loaded in game. What to know:
 
 ## Licence
 
+Source code: https://github.com/Cl3mus33/TreeLODGen
+
 TreeLODGen is free software: you can redistribute it and/or modify it under the terms of the
 GNU General Public License version 3 as published by the Free Software Foundation. It is
 distributed WITHOUT ANY WARRANTY; see the `LICENSE` file for the full text. The source code
