@@ -1,0 +1,12 @@
+# build output
+bin/
+obj/
+publish/
+
+# local test data, renders and automation scripts
+_*/
+_*.txt
+_*.json
+scripts/
+LODGen_log.txt
+*.log
