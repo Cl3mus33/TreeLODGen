@@ -1,6 +1,6 @@
 # TreeLODGen
 
-> **Work in progress.** This is an early test build. It has been checked in game with two tree mods (Nordskog and Happy Little Trees) and vanilla trees; expect bugs with others. Not tested yet: Vortex, mods installed straight into Data, Windows display scaling other than 100 %. Please report problems with your tree mod's name and the `TreeLODGen_report.csv` from the output folder.
+> **Work in progress.** This is an early test build. It has been checked in game with three tree mods (Nordskog, Happy Little Trees and Ulvenwald) and vanilla trees; expect bugs with others. Not tested yet: Vortex, mods installed straight into Data, Windows display scaling other than 100 %. Please report problems with your tree mod's name and the `TreeLODGen_report.csv` from the output folder.
 
 Generates 3D tree LOD models from the trees of your own load order, in the format DynDOLOD
 defined for them.
@@ -123,6 +123,7 @@ Everything printed is also written to `TreeLODGen.log` next to the exe.
   the tool needs to know where DynDOLOD is. The window fills the field in by itself when
   TexGen or DynDOLOD is one of your Mod Organizer 2 executables; clear it to skip this. The
   stand-ins of the previous run are removed at each run.
+- **Bark that repeats along the trunk.** Such bark cannot sit on DynDOLOD's texture atlas (it showed as dark and grey bands on Ulvenwald), so its shape is named `noatlas` and uses its own texture. That costs one more draw call per bark texture and LOD block.
 - **Trees without foliage** (dead trunks) get a LOD made of their reduced bark alone.
 
 ## How it works

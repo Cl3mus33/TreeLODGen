@@ -42,7 +42,7 @@ sealed class PreviewPanel : Panel
         var model = new Model { Name = name };
         foreach (var shape in nif.GetShapes())
         {
-            var isBark = shape.name.get().Contains("Trunk", StringComparison.OrdinalIgnoreCase);
+            var isBark = shape.name.get().Contains("Trunk", StringComparison.OrdinalIgnoreCase) || shape.name.get().StartsWith("Bark ", StringComparison.Ordinal);
             var transform = shape.transform;
             var verts = nif.GetVertsForShape(shape).Select(v => transform.ApplyTransform(v)).ToList();
             var tris = new vectorTriangle();

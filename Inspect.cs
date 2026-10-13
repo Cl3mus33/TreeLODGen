@@ -32,6 +32,8 @@ static class Inspect
             Console.WriteLine($"\nShape [{nif.GetBlockID(shape)}] {shape.GetBlockName()} '{shape.name.get()}'");
             Console.WriteLine($"  path: {NifUtil.NodePath(nif, shape)}");
             Console.WriteLine($"  verts={shape.GetNumVertices()} tris={shape.GetNumTriangles()} skinned={shape.IsSkinned()} vcolors={shape.HasVertexColors()}");
+            var normals = nif.GetNormalsForShape(shape); var zero = normals == null ? -1 : normals.Count(n => n.x * n.x + n.y * n.y + n.z * n.z < 0.25f);
+            Console.WriteLine($"  normals={(shape.HasNormals() ? "yes" : "no")} count={(normals == null ? 0 : normals.Count)} degenerate={zero} tangents={(shape.HasTangents() ? "yes" : "no")}");
 
             var global = NifUtil.GlobalTransform(nif, shape);
             var tr = global.translation;

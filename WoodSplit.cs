@@ -66,6 +66,10 @@ static class WoodSplit
             if (isWood) { analysis.WoodTris += island.tris.Count; analysis.WoodArea += island.area; analysis.WoodIslands++; }
             else { analysis.LeafTris += island.tris.Count; analysis.LeafArea += island.area; analysis.LeafIslands++; }
         }
+        // Each Triangle read above is a view into the native list: without this the list can
+        // be collected once the loop that filled the islands is over, while the islands still
+        // read their triangles from it, and the read hits freed memory.
+        GC.KeepAlive(tris);
         return analysis;
     }
 

@@ -230,31 +230,48 @@ static class Split
     // LOD inputs must be plain static geometry: a fresh BSFadeNode root with only the
     // wanted geometry, so collision, controllers, bones and switch nodes never come along.
     const int BareTreeBudget = 2;
+    const float TilingTolerance = 0.05f;
     public static int[] CrownFloors = { 2500, 1000, 400 };
     const string CrownSuffix = " Crown";
     const string TrunkSuffix = " Trunk";
 
     // DynDOLOD pairs each LOD shape with a shape of the full model through their names, to
     // carry over texture swaps. A LOD name that contains the name of another full model
-    // shape gets paired with that one: a trunk taken for the foliage shape has the whole
-    // foliage texture replaced, and every tree using it turns into bare trunks. Such a
-    // shape gets a name of its own, which pairs with nothing.
+    // shape can get paired with that one: a trunk taken for the foliage shape has the whole
+    // foliage texture replaced, and every tree using it loses its crown. So the name is the
+    // first of these that contains no other shape's name: the source name with its kind,
+    // then a name of its own with the kind, then one without it. The last is for mods whose
+    // full models have a shape plainly called "Trunk" or "Crown" that is something else.
     static string LodShapeName(NifFile src, List<NiShape> sourceShapes, NiShape shape, bool isCrown, int index)
     {
         var term = isCrown ? "Crown" : "Trunk";
         var own = shape.name.get();
-        var name = own.Contains(term, StringComparison.OrdinalIgnoreCase) ? own : own + (isCrown ? CrownSuffix : TrunkSuffix);
         var texture = src.GetTexturePathByIndex(shape, 0);
-        var mistaken = sourceShapes.Any(other =>
+        bool Mistaken(string name) => sourceShapes.Any(other =>
         {
             var otherName = other.name.get();
             return otherName.Length > 0 && !otherName.Equals(own, StringComparison.OrdinalIgnoreCase)
                 && name.Contains(otherName, StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(src.GetTexturePathByIndex(other, 0), texture, StringComparison.OrdinalIgnoreCase);
         });
-        return mistaken ? $"{term} {index}" : name;
+        var candidates = new[]
+        {
+            own.Contains(term, StringComparison.OrdinalIgnoreCase) ? own : own + (isCrown ? CrownSuffix : TrunkSuffix),
+            $"{term} {index}",
+            $"{(isCrown ? "Leaves" : "Bark")} {index}",
+        };
+        var chosen = candidates.FirstOrDefault(c => !Mistaken(c)) ?? $"LOD shape {index}";
+        // Bark that repeats its texture along the trunk cannot live on DynDOLOD's atlas: a
+        // tile there is one copy of the texture, and coordinates past it read whatever lies
+        // next to it, which shows as dark and grey bands. "noatlas" makes that shape use its
+        // own texture, where repeating works.
+        if (!isCrown)
+        {
+            var uvs = src.GetUvsForShape(shape);
+            if (uvs.Any(uv => uv.u < -TilingTolerance || uv.u > 1 + TilingTolerance || uv.v < -TilingTolerance || uv.v > 1 + TilingTolerance)) chosen += " noatlas";
+        }
+        return chosen;
     }
-
     static void WriteStaticNif(NifFile src, List<Part> parts, string path, float keep, float area, Result result, Action<string> log, int trunkTris = 0)
     {
         using var dst = new NifFile();

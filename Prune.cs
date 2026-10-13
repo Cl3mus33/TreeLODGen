@@ -54,6 +54,7 @@ static class Prune
         shape.UpdateBounds();
 
         log($"  pruned '{shape.name.get()}': islands {islands.Count} -> {kept.Count}, tris {tris.Count} -> {shape.GetNumTriangles()}, card scale x{scale:F2}, leaf area {keptArea * scale * scale / totalArea:P0} of original");
+        GC.KeepAlive(tris); // the islands hold views into this native list
     }
 
     // Radial outline of the crown by height. Enlarged cards are pulled back inside it, so
