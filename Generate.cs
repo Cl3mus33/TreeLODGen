@@ -14,6 +14,9 @@ static class Generate
     // there, and a list of them tells this tool which files are its own.
     const string OldSubfolder = "treelodgen";
     const string OwnList = "TreeLODGen_models.txt";
+    // A tree counts as vanilla when its model path is the base game's or its record is one
+    // of the base game's that a mod gave another model (Ulvenwald's oaks replace aspens).
+    static readonly HashSet<string> BaseMasters = new(StringComparer.OrdinalIgnoreCase) { "Skyrim.esm", "Update.esm", "Dawnguard.esm", "HearthFires.esm", "Dragonborn.esm" };
     const string StandInList = "TreeLODGen_standins.txt";
 
     public const string Usage = """
@@ -37,6 +40,7 @@ static class Generate
                                 (default: 0.4:0.8:400:2500,0.15:0.7:150:1000,0.06:0.6:60:400)
           --far-3d              use the 3D models at LOD 8 and 16 too, instead of billboards there;
                                 several times heavier, a large forest can stop the game loading
+          --tree-choices <file> JSON object of model path -> "lod4", "all" or "billboard", per tree
           --no-rules            do not write DynDOLOD rules for the generated trees
           --dyndolod <folder>   DynDOLOD folder; needed only for trees made of animated shapes alone,
                                 so that TexGen can still render a billboard for them
@@ -72,6 +76,7 @@ static class Generate
         // per LOD level: share of leaf cards kept, share of leaf area restored, bark triangle budget
         var levels = new[] { (0.4f, 0.8f, 400), (0.15f, 0.7f, 150), (0.06f, 0.6f, 60) };
         bool all = false, rules = true, far3d = false;
+        Dictionary<string, string>? choices = null;
         try
         {
             for (var i = 0; i < args.Length; i++)
@@ -87,6 +92,10 @@ static class Generate
                     case "--all": all = true; break;
                     case "--no-rules": rules = false; break;
                     case "--far-3d": far3d = true; break;
+                    case "--tree-choices":
+                        choices = TreeRules.LoadChoices(args[++i]);
+                        if (choices == null) { Console.WriteLine($"Could not read the tree choices in {args[i]}."); return 1; }
+                        break;
                     case "--levels":
                         var fields = args[++i].Split(',').Select(l => l.Split(':')).ToArray();
                         levels = fields.Select(l => (float.Parse(l[0], CultureInfo.InvariantCulture), float.Parse(l[1], CultureInfo.InvariantCulture), l.Length > 2 ? int.Parse(l[2]) : 400)).ToArray();
@@ -171,7 +180,7 @@ static class Generate
         Directory.CreateDirectory(stageLod);
         var stageReport = Path.Combine(stage, "TreeLODGen_report.csv");
         var report = new StreamWriter(stageReport);
-        report.WriteLine("model;editor_ids;mesh_source;crc;status;bark_tris;leaf_tris;notes");
+        report.WriteLine("model;editor_ids;mesh_source;crc;status;bark_tris;leaf_tris;notes;vanilla;billboard;lod4_kb;records");
         var counts = new SortedDictionary<string, int>();
         var generated = new List<string>();
         var foliage = new Dictionary<string, (int size, int tile)>();
@@ -192,7 +201,7 @@ static class Generate
             Ui.ThrowIfCancelled();
             if (Candidate(group)) Ui.Tree(done++, candidates, Path.GetFileNameWithoutExtension(group.Key));
             var relative = @"meshes\" + group.Key;
-            string status, crc = "", source = vfs.SourceOf(relative) ?? "", detail = ";;";
+            string status, crc = "", source = vfs.SourceOf(relative) ?? "", detail = ";;", extra = ";;;";
 
             if (!group.Any(t => t.IsLodSized())) status = "too small for tree LOD";
             else if (!group.Key.Contains("tree")) status = "not a tree for TexGen (no 'tree' in the model path)";
@@ -209,6 +218,9 @@ static class Generate
                     catch (Exception e) { result = new Split.Result { Error = "failed: " + e.Message }; }
                     status = result.Error ?? "generated";
                     detail = $"{result.TrunkTris};{result.CrownTrisFull};{string.Join(",", result.Notes)}";
+                    var lod4 = Path.Combine(stageLod, $"{Path.GetFileNameWithoutExtension(group.Key)}_{crc}passthru_lod.nif");
+                    var billboard = !result.SkinnedOnly || standInDir != null;
+                    extra = $"{(vfs.InBaseGame(relative) || group.Any(t => BaseMasters.Contains(t.Owner)) ? "yes" : "no")};{(billboard ? "yes" : "no")};{(File.Exists(lod4) ? new FileInfo(lod4).Length / 1024 : 0)};{group.Count()}";
                     if (result.Error == null)
                     {
                         foreach (var d in result.Density)
@@ -230,7 +242,7 @@ static class Generate
 
             var bucket = status.StartsWith("has 3D LOD") ? "already have a 3D LOD (left alone, use --all to redo them)" : status;
             counts[bucket] = counts.GetValueOrDefault(bucket) + 1;
-            report.WriteLine($"{group.Key};{string.Join(",", group.Select(t => t.EditorId))};{source};{crc};{status};{detail}");
+            report.WriteLine($"{group.Key};{string.Join(",", group.Select(t => t.EditorId))};{source};{crc};{status};{detail};{extra}");
         }
 
         // all trees are done: replace the previous models with the new ones
@@ -256,19 +268,11 @@ static class Generate
 
         var configDir = Path.Combine(output, "DynDOLOD");
         if (Directory.Exists(configDir)) foreach (var stale in Directory.EnumerateFiles(configDir, "DynDOLOD_SSE_*")) File.Delete(stale);
-        if (rules && generated.Count > 0)
-        {
-            // One rule per generated tree: 3D model at LOD 4 and billboards beyond, which is
-            // DynDOLOD's own high preset, or 3D at every level on request. The far levels cover
-            // most of the map, so 3D there multiplies what the game has to load. A tree TexGen
-            // cannot make a billboard for keeps its 3D models, or it would vanish past LOD 4.
-            Directory.CreateDirectory(configDir);
-            var lines = new List<string> { "[Skyrim LODGen]" };
-            var noBillboard = standInDir == null ? skinnedOnly.Select(t => t.Model).ToHashSet(StringComparer.OrdinalIgnoreCase) : new HashSet<string>();
-            lines.AddRange(generated.Select((model, i) => $"LODGen{i + 1}={model},Static LOD4,{(far3d || noBillboard.Contains(model) ? "Static LOD8,Static LOD16" : "Billboard,Billboard")},Far LOD,Unchanged,17"));
-            foreach (var preset in new[] { "high", "medium", "low" })
-                File.WriteAllLines(Path.Combine(configDir, $"DynDOLOD_SSE_skyrimesm_{preset}.ini"), lines);
-        }
+        // One rule per generated tree, from the per-tree choices when there are any: the 3D
+        // model at LOD 4 and billboards beyond by default (DynDOLOD's own high preset), or 3D
+        // at every level on request. The far levels cover most of the map, so 3D there
+        // multiplies what the game has to load.
+        if (rules) TreeRules.Write(output, far3d, choices);
         if (standInDir != null)
         {
             // The stand-ins live in DynDOLOD's own folder. Those of the previous run are

@@ -16,6 +16,7 @@ sealed class Settings
         public int Detail { get; set; } = 1;
         public bool All { get; set; }
         public bool Far3d { get; set; }
+        public Dictionary<string, string> Choices { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     public Dictionary<string, Entry> Launchers { get; set; } = new(StringComparer.OrdinalIgnoreCase);

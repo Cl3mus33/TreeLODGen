@@ -61,6 +61,9 @@ sealed class Vfs
         return new Vfs(roots, cacheDir, loadOrder, progress);
     }
 
+    // Whether the base game's own archives hold this file, whatever overrides it.
+    public bool InBaseGame(string relativePath) => _archives.Any(a => Path.GetFileName(a.bsa.ArchivePath).StartsWith("Skyrim - ", StringComparison.OrdinalIgnoreCase) && a.bsa.Contains(relativePath));
+
     // Where a file comes from, without extracting it.
     public string? SourceOf(string relativePath)
     {

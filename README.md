@@ -105,6 +105,12 @@ Everything printed is also written to `TreeLODGen.log` next to the exe.
   from about 5 GB to over 8 GB with a dense tree mod and grass LOD, and the game no longer
   got past its loading screen. Turn it on only for light tree mods, and check that the game
   still loads.
+- **Choosing trees.** After a generation, **Choose trees...** lists the generated trees with how many
+  copies the last DynDOLOD run placed and the size of their LOD 4 model. Each can use its 3D model at
+  LOD 4, 3D everywhere, or billboards only; "Vanilla trees only" keeps 3D for the base game's trees
+  and the trees that replace them. Saving rewrites the DynDOLOD rules only: run DynDOLOD again, there
+  is no need to generate or run TexGen again. The choices are remembered. On the command line, pass
+  `--tree-choices <file>`, a JSON object of model path to `"lod4"`, `"all"` or `"billboard"`.
 - **Sparse crowns.** A crown made of few large cards is not pruned below a number of
   triangles per level (the fourth value of `--levels`), so such trees keep their full crown
   at LOD 4.
