@@ -2,13 +2,15 @@ using System.Text.Json;
 
 namespace TreeLODGen;
 
-// The DynDOLOD rules written for the generated trees, one per tree, and the per-tree choice
-// behind each: the 3D model at LOD 4 and billboards beyond, the 3D models at every level, or
-// billboards only. Choices are kept apart from the models, so changing them only rewrites
-// the rule files: the trees are not generated again (DynDOLOD has to run again, though).
+// Per-tree exceptions to DynDOLOD's own "tree" rule. By default no rule is written: the
+// generated models carry the names that rule looks for, so the LOD levels of every tree are
+// set in DynDOLOD itself. A rule is only written for a tree given its own choice in
+// "Choose trees", and for a tree TexGen cannot make a billboard for, which keeps its 3D
+// models at every level or it would vanish past LOD 4. Changing choices only rewrites the
+// rule file: the trees are not generated again (DynDOLOD has to run again, though).
 static class TreeRules
 {
-    public const string Lod4 = "lod4", Everywhere = "all", Billboard = "billboard";
+    public const string Default = "default", Lod4 = "lod4", Everywhere = "all", Billboard = "billboard";
 
     // One generated tree as the report describes it.
     public sealed record Tree(string Model, string Source, bool Vanilla, bool HasBillboard, int Lod4Kb, int Records);
@@ -29,16 +31,15 @@ static class TreeRules
         return trees;
     }
 
-    // What a tree gets: its own choice, else the default of the window's checkbox. A tree
-    // TexGen cannot make a billboard for keeps its 3D models everywhere, or it would vanish.
-    public static string Effective(Tree tree, bool far3d, IReadOnlyDictionary<string, string>? choices)
+    // What a tree gets: its own choice, else DynDOLOD's tree rule.
+    public static string Effective(Tree tree, IReadOnlyDictionary<string, string>? choices)
     {
-        var choice = choices != null && choices.TryGetValue(tree.Model, out var c) ? c : far3d ? Everywhere : Lod4;
-        return tree.HasBillboard ? choice : Everywhere;
+        if (!tree.HasBillboard) return Everywhere;
+        return choices != null && choices.TryGetValue(tree.Model, out var c) && c != "" ? c : Default;
     }
 
-    // Rewrites the rule files of the output; returns how many trees use 3D at LOD 4 or more.
-    public static int Write(string output, bool far3d, IReadOnlyDictionary<string, string>? choices)
+    // Rewrites the rule files of the output; returns how many trees got a rule of their own.
+    public static int Write(string output, IReadOnlyDictionary<string, string>? choices)
     {
         var configDir = Path.Combine(output, "DynDOLOD");
         if (Directory.Exists(configDir))
@@ -46,23 +47,26 @@ static class TreeRules
         var trees = ReadReport(output);
         if (trees.Count == 0) return 0;
 
-        Directory.CreateDirectory(configDir);
         var lines = new List<string> { "[Skyrim LODGen]" };
-        var in3d = 0;
+        var own = 0;
         foreach (var tree in trees)
         {
-            var levels = Effective(tree, far3d, choices) switch
+            var choice = Effective(tree, choices);
+            if (choice == Default) continue;
+            own++;
+            var levels = choice switch
             {
                 Everywhere => "Static LOD4,Static LOD8,Static LOD16",
                 Billboard => "Billboard,Billboard,Billboard",
                 _ => "Static LOD4,Billboard,Billboard",
             };
-            if (!levels.StartsWith("Billboard")) in3d++;
             lines.Add($"LODGen{lines.Count}={tree.Model},{levels},Far LOD,Unchanged,17");
         }
+        if (own == 0) return 0;
+        Directory.CreateDirectory(configDir);
         foreach (var preset in new[] { "high", "medium", "low" })
             File.WriteAllLines(Path.Combine(configDir, $"DynDOLOD_SSE_skyrimesm_{preset}.ini"), lines);
-        return in3d;
+        return own;
     }
 
     // How many copies of each full model the last DynDOLOD run placed in object LOD, from

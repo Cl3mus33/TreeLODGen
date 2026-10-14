@@ -27,9 +27,9 @@ The output is a normal mod folder:
 
 - `meshes\DynDOLOD\lod\trees\` : the LOD models, named with the CRC32 of the full
   model as DynDOLOD expects (`tree_XXXXXXXXpassthru_lod.nif`, `..._lod_1.nif`, `..._lod_2.nif`);
-- `DynDOLOD\DynDOLOD_SSE_skyrimesm_[high|medium|low].ini` : one rule per generated tree, so
-  that DynDOLOD uses the 3D model at LOD 4 and billboards beyond (its own high preset), or
-  the 3D models at LOD 4, 8 and 16 with `--far-3d`;
+- `DynDOLOD\DynDOLOD_SSE_skyrimesm_[high|medium|low].ini` : only when some trees need a rule of
+  their own (see "Choosing trees"). Every other tree follows DynDOLOD's own "tree" rule, so the
+  LOD levels (3D at LOD 4 only, or 3D at LOD 8 and 16 too) are set in DynDOLOD as usual;
 - `TreeLODGen_report.csv` : what was done for every tree record, and why.
 - `meshes\DynDOLOD\lod\trees\TreeLODGen_models.txt` : the list of the models above, so that
   the next run knows they are its own and replaces them.
@@ -89,8 +89,8 @@ scripts or batch use.
 --levels <list>       per LOD level: leaf cards kept : leaf area restored : bark triangles
                       : leaf triangles a crown is never pruned below
                       default 0.4:0.8:400:2500,0.15:0.7:150:1000,0.06:0.6:60:400
---far-3d              use the 3D models at LOD 8 and 16 too, instead of billboards there
---no-rules            do not write DynDOLOD rules for the generated trees
+--tree-choices <file> JSON object of model path -> "lod4", "all" or "billboard", per tree
+--no-rules            write no DynDOLOD rule at all, not even for the tree choices
 --dyndolod <folder>   DynDOLOD folder, see "Trees made of animated shapes only"
 --no-pause            start at once and do not wait for a key at the end
 ```
@@ -99,16 +99,19 @@ Everything printed is also written to `TreeLODGen.log` next to the exe.
 
 ## Good to know
 
-- **Weight.** By default the 3D models are used at LOD 4 and billboards beyond, as in
-  DynDOLOD's high preset. `--far-3d` (the checkbox in the window) uses 3D at LOD 8 and 16
-  too. Those levels cover most of the map: in tests the object LOD meshes of Tamriel went
-  from about 5 GB to over 8 GB with a dense tree mod and grass LOD, and the game no longer
-  got past its loading screen. Turn it on only for light tree mods, and check that the game
-  still loads.
+- **Weight.** DynDOLOD's tree rule decides where the 3D models are used. Its high preset uses
+  them at LOD 4 and billboards beyond. Using them at LOD 8 and 16 too costs a lot: those levels
+  cover most of the map, and in tests the object LOD meshes of Tamriel went from about 5 GB to
+  over 8 GB with a dense tree mod and grass LOD, and the game no longer got past its loading
+  screen. Use it only for light tree mods, and check that the game still loads.
+- **Far levels.** To stay light, the LOD 8 and LOD 16 crowns keep fewer leaf cards. The kept
+  cards are enlarged to keep the crown's coverage, up to twice their size, so far crowns stay
+  as airy as the real tree instead of turning into a few big solid cards.
 - **Choosing trees.** After a generation, **Choose trees...** lists the generated trees with how many
   copies the last DynDOLOD run placed and the size of their LOD 4 model. Each can use its 3D model at
-  LOD 4, 3D everywhere, or billboards only; "Vanilla trees only" keeps 3D for the base game's trees
-  and the trees that replace them. Saving rewrites the DynDOLOD rules only: run DynDOLOD again, there
+  LOD 4, 3D everywhere, billboards only, or follow DynDOLOD's tree rule (the default); "Vanilla trees
+  only" leaves the base game's trees and the trees that replace them on DynDOLOD's rule and puts
+  the others on billboards. Saving rewrites the DynDOLOD rules only: run DynDOLOD again, there
   is no need to generate or run TexGen again. The choices are remembered. On the command line, pass
   `--tree-choices <file>`, a JSON object of model path to `"lod4"`, `"all"` or `"billboard"`.
 - **Sparse crowns.** A crown made of few large cards is not pruned below a number of

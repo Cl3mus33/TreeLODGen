@@ -7,6 +7,8 @@ namespace TreeLODGen;
 // on alpha tested foliage.
 static class Prune
 {
+    const float MaxCardScale = 2.0f;
+
     // keep = fraction of islands kept; area = fraction of the original leaf area the
     // kept islands are scaled back up to.
     public static void Apply(NifFile nif, NiShape shape, float keep, float area, Action<string> log)
@@ -35,7 +37,9 @@ static class Prune
 
         var totalArea = islands.Sum(i => i.Area);
         var keptArea = kept.Sum(i => i.Area);
-        var scale = MathF.Sqrt(MathF.Max(1f, totalArea * area / keptArea));
+        // Enlarging the kept cards keeps the crown's coverage, but past a point a few huge
+        // cards make the crown look bulkier and more solid than the tree it stands for.
+        var scale = MathF.Min(MaxCardScale, MathF.Sqrt(MathF.Max(1f, totalArea * area / keptArea)));
 
         var profile = new Profile(verts);
         foreach (var island in kept)

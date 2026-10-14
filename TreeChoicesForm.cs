@@ -7,21 +7,19 @@ namespace TreeLODGen;
 // in the output folder; saving rewrites the DynDOLOD rules there without generating again.
 sealed class TreeChoicesForm : Form
 {
-    static readonly string[] Labels = { "3D at LOD 4", "3D everywhere", "Billboard only" };
-    static readonly string[] Values = { TreeRules.Lod4, TreeRules.Everywhere, TreeRules.Billboard };
+    static readonly string[] Labels = { "DynDOLOD tree rule", "3D at LOD 4", "3D everywhere", "Billboard only" };
+    static readonly string[] Values = { TreeRules.Default, TreeRules.Lod4, TreeRules.Everywhere, TreeRules.Billboard };
 
     readonly List<TreeRules.Tree> _trees;
-    readonly bool _far3d;
     readonly DataGridView _grid = new();
     readonly TextBox _filter = new() { BackColor = Theme.Field, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle };
     readonly Label _summary = new() { ForeColor = Theme.Dim, AutoSize = true };
 
     public Dictionary<string, string> Choices { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public TreeChoicesForm(List<TreeRules.Tree> trees, bool far3d, IReadOnlyDictionary<string, string> saved, IReadOnlyDictionary<string, int> placed)
+    public TreeChoicesForm(List<TreeRules.Tree> trees, IReadOnlyDictionary<string, string> saved, IReadOnlyDictionary<string, int> placed)
     {
         _trees = trees;
-        _far3d = far3d;
         Text = "Choose trees";
         ClientSize = new Size(900, 640);
         StartPosition = FormStartPosition.CenterParent;
@@ -35,13 +33,13 @@ sealed class TreeChoicesForm : Form
         var intro = new Label
         {
             Text = "3D models cost far more than billboards: copies placed x model size is what makes the LOD heavy. "
-                 + "Saving only rewrites the rules in the output folder: run DynDOLOD again afterwards (TexGen is not needed).",
+                 + "Trees left on \"DynDOLOD tree rule\" follow the tree rule set in DynDOLOD. Saving only rewrites the rules: run DynDOLOD again afterwards (TexGen is not needed).",
             ForeColor = Theme.Dim, Location = new Point(16, 12), Size = new Size(868, 36),
         };
         Controls.Add(intro);
 
-        AddButton("Vanilla trees only", 16, 54, 150, () => SetAll(t => t.Vanilla ? TreeRules.Lod4 : TreeRules.Billboard));
-        AddButton("All 3D at LOD 4", 174, 54, 130, () => SetAll(_ => TreeRules.Lod4));
+        AddButton("Vanilla trees only", 16, 54, 150, () => SetAll(t => t.Vanilla ? TreeRules.Default : TreeRules.Billboard));
+        AddButton("All DynDOLOD rule", 174, 54, 130, () => SetAll(_ => TreeRules.Default));
         AddButton("All billboards", 312, 54, 120, () => SetAll(_ => TreeRules.Billboard));
         Controls.Add(new Label { Text = "Filter", ForeColor = Theme.Dim, AutoSize = true, Location = new Point(560, 60) });
         _filter.Location = new Point(600, 56);
@@ -54,7 +52,7 @@ sealed class TreeChoicesForm : Form
         foreach (var tree in trees.OrderByDescending(Placed).ThenBy(t => t.Model))
         {
             var row = _grid.Rows[_grid.Rows.Add(Path.GetFileNameWithoutExtension(tree.Model), tree.Source, tree.Vanilla ? "yes" : "", placed.Count > 0 ? Placed(tree) : null, tree.Lod4Kb,
-                Labels[Array.IndexOf(Values, TreeRules.Effective(tree, far3d, saved))])];
+                Labels[Array.IndexOf(Values, TreeRules.Effective(tree, saved))])];
             row.Tag = tree;
             row.Cells[0].ToolTipText = tree.Model;
             if (!tree.HasBillboard)
@@ -152,22 +150,16 @@ sealed class TreeChoicesForm : Form
 
     void UpdateSummary()
     {
-        int lod4 = 0, everywhere = 0, billboard = 0;
+        var counts = new int[Labels.Length];
         foreach (DataGridViewRow row in _grid.Rows)
-            switch (Array.IndexOf(Labels, row.Cells[5].Value as string))
-            {
-                case 0: lod4++; break;
-                case 1: everywhere++; break;
-                default: billboard++; break;
-            }
-        _summary.Text = $"{_trees.Count} trees:  {lod4} 3D at LOD 4,  {everywhere} 3D everywhere,  {billboard} billboard only";
+            counts[Math.Max(0, Array.IndexOf(Labels, row.Cells[5].Value as string))]++;
+        _summary.Text = $"{_trees.Count} trees:  {counts[0]} DynDOLOD rule,  {counts[1]} 3D at LOD 4,  {counts[2]} 3D everywhere,  {counts[3]} billboard only";
     }
 
-    // Only choices that differ from the main window's default are kept, so that its
-    // checkbox still decides for every tree left alone here.
+    // Only trees taken off DynDOLOD's tree rule are kept.
     void Save()
     {
-        var fallback = _far3d ? TreeRules.Everywhere : TreeRules.Lod4;
+        var fallback = TreeRules.Default;
         foreach (DataGridViewRow row in _grid.Rows)
         {
             if (row.Tag is not TreeRules.Tree tree || !tree.HasBillboard) continue;

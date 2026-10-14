@@ -20,7 +20,7 @@ sealed class MainForm : Form
     string? _modsFolder;
     readonly Label _outputNote = Caption(""), _status = Caption("Ready.");
     readonly ComboBox _detail = new();
-    readonly CheckBox _all = Check("Also redo trees that already have a 3D LOD"), _rules = Check("3D at LOD 8 and 16 too  (much heavier)");
+    readonly CheckBox _all = Check("Also redo trees that already have a 3D LOD");
     readonly Button _generate = Flat("Generate", true), _cancel = Flat("Cancel", false), _open = Flat("Open output folder", false), _choose = Flat("Choose trees...", false);
     Dictionary<string, string> _choices = new(StringComparer.OrdinalIgnoreCase);
     readonly ProgressLine _progress = new();
@@ -66,8 +66,6 @@ sealed class MainForm : Form
         _detail.SelectedIndex = 1;
         Add(_detail, 24, 302, 230);
         Add(_all, 280, 284);
-        Add(_rules, 280, 308);
-        _rules.Checked = false;
 
         Add(_generate, 24, 350, 170, 40);
         Add(_cancel, 204, 350, 100, 40);
@@ -109,7 +107,6 @@ sealed class MainForm : Form
             if (saved.DynDOLOD == "" || Directory.Exists(Path.Combine(saved.DynDOLOD, "Edit Scripts", "DynDOLOD"))) _dyndolod.Text = saved.DynDOLOD;
             _detail.SelectedIndex = Math.Clamp(saved.Detail, 0, Details.Length - 1);
             _all.Checked = saved.All;
-            _rules.Checked = saved.Far3d;
             _choices = new Dictionary<string, string>(saved.Choices ?? new(), StringComparer.OrdinalIgnoreCase);
         }
         _output.TextChanged += (_, _) => { if (_output.Focused) { _outputEdited = true; _outputNote.Text = ""; } UpdateChoose(); };
@@ -166,7 +163,6 @@ sealed class MainForm : Form
             args.AddRange(new[] { "--dyndolod", _dyndolod.Text.Trim() });
         }
         if (_all.Checked) args.Add("--all");
-        if (_rules.Checked) args.Add("--far-3d");
         SaveSettings();
         if (_choices.Count > 0)
         {
@@ -237,7 +233,7 @@ sealed class MainForm : Form
         UpdateChoose();
     }
 
-    void SaveSettings() => Settings.Save(_modsFolder, new Settings.Entry { Data = _data.Text, Output = _output.Text, DynDOLOD = _dyndolod.Text.Trim(), Detail = _detail.SelectedIndex, All = _all.Checked, Far3d = _rules.Checked, Choices = _choices });
+    void SaveSettings() => Settings.Save(_modsFolder, new Settings.Entry { Data = _data.Text, Output = _output.Text, DynDOLOD = _dyndolod.Text.Trim(), Detail = _detail.SelectedIndex, All = _all.Checked, Choices = _choices });
 
     // The tree list comes from the report of the last generation in the output folder.
     void UpdateChoose() => _choose.Enabled = !_cancel.Enabled && File.Exists(Path.Combine(_output.Text, "TreeLODGen_report.csv"));
@@ -253,18 +249,18 @@ sealed class MainForm : Form
         }
         // choices saved for trees that are no longer generated would only clutter the settings
         var known = trees.Select(t => t.Model).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        using var dialog = new TreeChoicesForm(trees, _rules.Checked, _choices.Where(c => known.Contains(c.Key)).ToDictionary(c => c.Key, c => c.Value, StringComparer.OrdinalIgnoreCase), TreeRules.PlacedCounts(_dyndolod.Text.Trim()));
+        using var dialog = new TreeChoicesForm(trees, _choices.Where(c => known.Contains(c.Key)).ToDictionary(c => c.Key, c => c.Value, StringComparer.OrdinalIgnoreCase), TreeRules.PlacedCounts(_dyndolod.Text.Trim()));
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
         _choices = dialog.Choices;
         SaveSettings();
-        var in3d = TreeRules.Write(_output.Text, _rules.Checked, _choices);
+        var own = TreeRules.Write(_output.Text, _choices);
         _status.ForeColor = Theme.Accent;
-        _status.Text = $"Rules updated: {in3d} of {trees.Count} trees in 3D. Run DynDOLOD again to apply them.";
+        _status.Text = $"Rules updated: {own} of {trees.Count} trees off DynDOLOD's tree rule. Run DynDOLOD again to apply them.";
     }
 
     void SetBusy(bool busy)
     {
-        foreach (Control control in new Control[] { _data, _output, _dyndolod, _detail, _all, _rules, _generate, _choose })
+        foreach (Control control in new Control[] { _data, _output, _dyndolod, _detail, _all, _generate, _choose })
             control.Enabled = !busy;
         _generate.Text = busy ? "Generating..." : "Generate";
         _cancel.Enabled = busy;

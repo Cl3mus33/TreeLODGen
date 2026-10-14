@@ -38,8 +38,6 @@ static class Generate
           --levels <list>       per LOD level 4,8,16: leaf cards kept : leaf area restored : bark triangles
                                 : leaf triangles a crown is never pruned below
                                 (default: 0.4:0.8:400:2500,0.15:0.7:150:1000,0.06:0.6:60:400)
-          --far-3d              use the 3D models at LOD 8 and 16 too, instead of billboards there;
-                                several times heavier, a large forest can stop the game loading
           --tree-choices <file> JSON object of model path -> "lod4", "all" or "billboard", per tree
           --no-rules            do not write DynDOLOD rules for the generated trees
           --dyndolod <folder>   DynDOLOD folder; needed only for trees made of animated shapes alone,
@@ -75,7 +73,7 @@ static class Generate
         string output = "", data = "", mo2 = "", profile = "Default", pluginsTxt = "", dyndolod = "";
         // per LOD level: share of leaf cards kept, share of leaf area restored, bark triangle budget
         var levels = new[] { (0.4f, 0.8f, 400), (0.15f, 0.7f, 150), (0.06f, 0.6f, 60) };
-        bool all = false, rules = true, far3d = false;
+        bool all = false, rules = true;
         Dictionary<string, string>? choices = null;
         try
         {
@@ -91,7 +89,7 @@ static class Generate
                     case "--dyndolod": dyndolod = args[++i]; break;
                     case "--all": all = true; break;
                     case "--no-rules": rules = false; break;
-                    case "--far-3d": far3d = true; break;
+                    case "--far-3d": break; // no longer used: the tree rule is set in DynDOLOD
                     case "--tree-choices":
                         choices = TreeRules.LoadChoices(args[++i]);
                         if (choices == null) { Console.WriteLine($"Could not read the tree choices in {args[i]}."); return 1; }
@@ -137,7 +135,7 @@ static class Generate
             bool Generated(string mod) => mod.StartsWith("TreeLODGen", StringComparison.OrdinalIgnoreCase)
                 || mod.Contains("DynDOLOD Output", StringComparison.OrdinalIgnoreCase) || mod.Contains("TexGen Output", StringComparison.OrdinalIgnoreCase)
                 || mod.Contains("AnvilLOD Output", StringComparison.OrdinalIgnoreCase);
-            if (!Announce($"Mod Organizer 2 profile '{profile}' of {mo2}", ref output, Path.Combine(mo2, "mods"), all, rules, far3d)) return 0;
+            if (!Announce($"Mod Organizer 2 profile '{profile}' of {mo2}", ref output, Path.Combine(mo2, "mods"), all, rules)) return 0;
             Ui.Step(1, 4, "Reading the load order");
             loadOrder = Plugins.ActiveLoadOrder(Path.Combine(mo2, "profiles", profile));
             Ui.EndStep($"{loadOrder.Count} active plugins");
@@ -147,7 +145,7 @@ static class Generate
         else
         {
             if (pluginsTxt == "") pluginsTxt = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Skyrim Special Edition", "plugins.txt");
-            if (!Announce(data, ref output, Mo2.ModsFolderOfLauncher(), all, rules, far3d)) return 0;
+            if (!Announce(data, ref output, Mo2.ModsFolderOfLauncher(), all, rules)) return 0;
             Ui.Step(1, 4, "Reading the load order");
             loadOrder = Plugins.ActiveLoadOrder(data, pluginsTxt);
             Ui.EndStep($"{loadOrder.Count} active plugins");
@@ -272,7 +270,7 @@ static class Generate
         // model at LOD 4 and billboards beyond by default (DynDOLOD's own high preset), or 3D
         // at every level on request. The far levels cover most of the map, so 3D there
         // multiplies what the game has to load.
-        if (rules) TreeRules.Write(output, far3d, choices);
+        if (rules) TreeRules.Write(output, choices);
         if (standInDir != null)
         {
             // The stand-ins live in DynDOLOD's own folder. Those of the previous run are
@@ -338,7 +336,7 @@ static class Generate
             useMods ? "a mod in your Mod Organizer 2 mods folder" : "next to the tool, to install as a mod");
     }
 
-    static bool Announce(string source, ref string output, string? modsFolder, bool all, bool rules, bool far3d)
+    static bool Announce(string source, ref string output, string? modsFolder, bool all, bool rules)
     {
         var where = Ui.OnStep != null ? "the folder chosen in the window" : "set with --output";
         if (output == "") (output, where) = DefaultOutput(modsFolder);
@@ -346,7 +344,7 @@ static class Generate
         Console.WriteLine($"Writes  {output}");
         Console.WriteLine($"        ({where})");
         Console.WriteLine($"Trees   {(all ? "every tree, including those that already have a 3D LOD" : "trees that have no 3D LOD yet")}");
-        Console.WriteLine($"Rules   {(!rules ? "none written (--no-rules)" : far3d ? "3D models at LOD 4, 8 and 16 for the generated trees" : "3D models at LOD 4, billboards beyond, for the generated trees")}");
+        Console.WriteLine($"Rules   {(!rules ? "none written (--no-rules)" : "DynDOLOD's tree rule, except trees with their own choice")}");
         Console.WriteLine();
         if (!Ui.Interactive) return true;
 
