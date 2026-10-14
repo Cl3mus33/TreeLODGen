@@ -1,6 +1,6 @@
 # TreeLODGen
 
-> **Work in progress.** This is an early test build. It has been checked in game with three tree mods (Nordskog, Happy Little Trees and Ulvenwald) and vanilla trees; expect bugs with others. Not tested yet: Vortex, mods installed straight into Data, Windows display scaling other than 100 %. Please report problems with your tree mod's name and the `TreeLODGen_report.csv` from the output folder.
+> **Work in progress.** This is an early test build. It has been checked in game with four tree mods (Nordskog, Happy Little Trees, Ulvenwald and Wigfrid's Tree Replacer), with and without ENB and vanilla trees; expect bugs with others. Not tested yet: Vortex, mods installed straight into Data, Windows display scaling other than 100 %. Please report problems with your tree mod's name and the `TreeLODGen_report.csv` from the output folder.
 
 Generates 3D tree LOD models from the trees of your own load order, in the format DynDOLOD
 defined for them.
