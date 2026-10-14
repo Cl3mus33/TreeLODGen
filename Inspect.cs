@@ -54,7 +54,7 @@ static class Inspect
                 if (shader.GetBlockName() == "BSLightingShaderProperty")
                 {
                     var lighting = NifUtil.Downcast<BSLightingShaderProperty>(shader);
-                    line += $" type={lighting.GetShaderType()} clamp={lighting.textureClampMode}";
+                    line += $" type={lighting.GetShaderType()} clamp={lighting.textureClampMode} soft={lighting.softlighting:F2} rim={lighting.rimlightPower:F2} back={lighting.backlightPower:F2} gloss={lighting.glossiness:F1} spec={lighting.specularStrength:F2}";
                 }
                 Console.WriteLine(line);
                 Console.WriteLine($"  tex0: {nif.GetTexturePathByIndex(shape, 0)}");

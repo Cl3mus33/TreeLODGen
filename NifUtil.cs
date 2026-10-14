@@ -8,7 +8,7 @@ static class NifUtil
 {
     public const uint SLSF1_Skinned = 0x00000002;
     public const uint SLSF2_VertexColors = 0x00000020;
-    public const uint SLSF2_TreeAnim = 0x20000000;
+    public const uint SLSF2_TreeAnim = 0x20000000;
 
     public static T Downcast<T>(object obj) where T : class
     {
