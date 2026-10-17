@@ -154,6 +154,7 @@ static class Generate
         }
         loadOrder = loadOrder.Where(p => !p.StartsWith("DynDOLOD.", StringComparison.OrdinalIgnoreCase) && !p.Equals("Occlusion.esp", StringComparison.OrdinalIgnoreCase)).ToList();
         Textures.Resolver = vfs.Resolve;
+        var patched = ParallaxGenDiff.Load(vfs);
 
         Ui.EndStep($"{vfs.LooseCount:N0} files, {vfs.ArchiveCount} archives");
         Ui.Step(3, 4, "Finding the trees");
@@ -206,13 +207,13 @@ static class Generate
             else if (vfs.Resolve(relative) is not { } fullPath) status = "mesh not found";
             else
             {
-                crc = NifUtil.Crc32(File.ReadAllBytes(fullPath)).ToString("X8");
+                crc = ParallaxGenDiff.LodCrc(patched, relative, NifUtil.Crc32(File.ReadAllBytes(fullPath))).ToString("X8");
                 var lodName = $"{Path.GetFileNameWithoutExtension(group.Key)}_{crc}passthru_lod.nif";
                 if (!all && existingLod.TryGetValue(lodName, out var lodSource)) status = $"has 3D LOD ({lodSource})";
                 else
                 {
                     Split.Result result;
-                    try { result = Split.Process(fullPath, output, "", levels, null, null, Array.Empty<string>(), _ => { }, group.Key, stageLod, stageStandIns, false); }
+                    try { result = Split.Process(fullPath, output, "", levels, null, null, Array.Empty<string>(), _ => { }, group.Key, stageLod, stageStandIns, false, crc); }
                     catch (Exception e) { result = new Split.Result { Error = "failed: " + e.Message }; }
                     status = result.Error ?? "generated";
                     detail = $"{result.TrunkTris};{result.CrownTrisFull};{string.Join(",", result.Notes)}";

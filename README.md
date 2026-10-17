@@ -11,7 +11,8 @@ your game will actually show (loose files of your mods, or the vanilla archives)
 those LOD models itself, so any tree mod gets 3D LOD, including mods that ship none.
 
 Run it once **before your LOD generation**: TexGen and DynDOLOD, or another generator that
-reads the same 3D tree LOD files (see "Other LOD generators").
+reads the same 3D tree LOD files (see "Other LOD generators"). If you use PGPatcher, run it
+**after** PGPatcher.
 
 ## What it makes
 
@@ -26,7 +27,7 @@ Typical pine: 1740 + 400 triangles at LOD 4, 644 + 150 at LOD 8, 262 + 60 at LOD
 The output is a normal mod folder:
 
 - `meshes\DynDOLOD\lod\trees\` : the LOD models, named with the CRC32 of the full
-  model as DynDOLOD expects (`tree_XXXXXXXXpassthru_lod.nif`, `..._lod_1.nif`, `..._lod_2.nif`);
+  model as DynDOLOD expects, the one from before PGPatcher if it patched the tree (`tree_XXXXXXXXpassthru_lod.nif`, `..._lod_1.nif`, `..._lod_2.nif`);
 - `DynDOLOD\DynDOLOD_SSE_skyrimesm_[high|medium|low].ini` : only when some trees need a rule of
   their own (see "Choosing trees"). Every other tree follows DynDOLOD's own "tree" rule, so the
   LOD levels (3D at LOD 4 only, or 3D at LOD 8 and 16 too) are set in DynDOLOD as usual;
@@ -134,6 +135,15 @@ Everything printed is also written to `TreeLODGen.log` next to the exe.
   stand-ins of the previous run are removed at each run.
 - **Bark that repeats along the trunk.** Such bark cannot sit on DynDOLOD's texture atlas (it showed as dark and grey bands on Ulvenwald), so its shape is named `noatlas` and uses its own texture. That costs one more draw call per bark texture and LOD block.
 - **Trees without foliage** (dead trunks) get a LOD made of their reduced bark alone.
+- **PGPatcher.** PGPatcher rewrites tree meshes, which changes their CRC32. DynDOLOD still looks
+  LOD models up by the CRC32 from before patching (recorded in `ParallaxGen_Diff.json`), so the
+  tool reads that file and names the models the same way. Run TreeLODGen after PGPatcher, and
+  again whenever PGPatcher's output changes. Before 1.0.3, most patched trees silently fell
+  back to billboards.
+- **Scaled models.** Many tree mods (Ulvenwald especially) scale or move the tree on a node of
+  the NIF. The game applies that on every node except the root, whose transform it replaces
+  with the placed reference's; the LOD models follow the same rule, with the result written
+  straight into their vertices, so distant trees match the size of the full ones.
 
 ## How it works
 

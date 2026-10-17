@@ -68,7 +68,7 @@ static class Split
 
     sealed record Part(NiShape Shape, HashSet<ushort>? Vertices, int Tris, bool IsCrown);
 
-    public static Result Process(string fullPath, string outDir, string sub, (float keep, float area, int trunkTris)[] levels, string[]? crownHints, string[]? trunkHints, string[] dataRoots, Action<string> log, string? meshRelativePath = null, string? lodDir = null, string? standInDir = null, bool hybridInputs = true)
+    public static Result Process(string fullPath, string outDir, string sub, (float keep, float area, int trunkTris)[] levels, string[]? crownHints, string[]? trunkHints, string[] dataRoots, Action<string> log, string? meshRelativePath = null, string? lodDir = null, string? standInDir = null, bool hybridInputs = true, string? crcName = null)
     {
         crownHints ??= DefaultCrownHints;
         trunkHints ??= DefaultTrunkHints;
@@ -83,7 +83,7 @@ static class Split
         }
 
         // DynDOLOD pairs a LOD model with its full model through the CRC32 of the full model file.
-        var crc = result.Crc = NifUtil.Crc32(File.ReadAllBytes(fullPath)).ToString("X8");
+        var crc = result.Crc = crcName ?? NifUtil.Crc32(File.ReadAllBytes(fullPath)).ToString("X8");
         var baseName = $"{Path.GetFileNameWithoutExtension(fullPath).ToLowerInvariant()}_{crc}";
         log($"Full model: {Path.GetFileName(fullPath)}  CRC32={crc}");
 
@@ -318,7 +318,7 @@ static class Split
             if (!NifUtil.IsIdentity(global))
             {
                 if (!result.Notes.Contains($"transformed:{shape.name.get()}")) result.Notes.Add($"transformed:{shape.name.get()}");
-                log($"  NOTE: '{shape.name.get()}' is not at the origin of its file -- its placement was moved onto the shape transform.");
+                log($"  NOTE: '{shape.name.get()}' is not at the origin of its file -- its placement was baked into the LOD vertices.");
             }
 
             if (part.Vertices != null)
@@ -344,6 +344,7 @@ static class Split
                 Prune.Apply(dst, shape, keep, area, log);
                 ClampSmallUvOvershoot(dst, shape);
             }
+            NifUtil.BakeTransform(dst, shape);
         }
 
         // cloning a shape of a vanilla style tree drags parent nodes along; the shapes hang
