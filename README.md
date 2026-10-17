@@ -1,6 +1,5 @@
 # TreeLODGen
 
-By Clemus.
 
 > Checked in game with vanilla trees, Nordskog, Happy Little Trees, Ulvenwald and Wigfrid's Tree Replacer, with and without ENB and with PGPatcher. Not tested yet: Vortex, mods installed straight into Data, Windows display scaling other than 100 %. Please report problems with your tree mod's name and the `TreeLODGen_report.csv` from the output folder.
 
