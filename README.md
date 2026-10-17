@@ -43,9 +43,8 @@ path test TexGen uses.
 
 ## Requirements
 
-- Skyrim Special Edition / Anniversary Edition (archives version 105). Not Skyrim LE.
+- Skyrim Special Edition / Anniversary Edition.
 - DynDOLOD 3 with DynDOLOD Resources SE, used with ultra tree LOD.
-- Windows 64-bit. Nothing else to install.
 
 ## How to use
 
