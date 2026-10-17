@@ -1,6 +1,8 @@
 # TreeLODGen
 
-> **Work in progress.** This is an early test build. It has been checked in game with four tree mods (Nordskog, Happy Little Trees, Ulvenwald and Wigfrid's Tree Replacer), with and without ENB and vanilla trees; expect bugs with others. Not tested yet: Vortex, mods installed straight into Data, Windows display scaling other than 100 %. Please report problems with your tree mod's name and the `TreeLODGen_report.csv` from the output folder.
+By Clemus.
+
+> Checked in game with vanilla trees, Nordskog, Happy Little Trees, Ulvenwald and Wigfrid's Tree Replacer, with and without ENB and with PGPatcher. Not tested yet: Vortex, mods installed straight into Data, Windows display scaling other than 100 %. Please report problems with your tree mod's name and the `TreeLODGen_report.csv` from the output folder.
 
 Generates 3D tree LOD models from the trees of your own load order, in the format DynDOLOD
 defined for them.
@@ -179,6 +181,8 @@ CRC32, generated without errors and the result loaded in game. What to know:
 
 Source code: https://github.com/Cl3mus33/TreeLODGen
 
+Copyright (C) 2026 Clemus.
+
 TreeLODGen is free software: you can redistribute it and/or modify it under the terms of the
 GNU General Public License version 3 as published by the Free Software Foundation. It is
 distributed WITHOUT ANY WARRANTY; see the `LICENSE` file for the full text. The source code
@@ -191,6 +195,7 @@ is provided alongside the release.
 - [BCnEncoder.NET](https://github.com/Nominom/BCnEncoder.NET) for decoding DDS textures.
 - [K4os.Compression.LZ4](https://github.com/MiloszKrajewski/K4os.Compression.LZ4) for BSA archives.
 - DynDOLOD, TexGen and LODGen are by Sheson; this tool only produces input files for them.
+- Mechanicalpanda and Tomato for their reports and in-game tests.
 
 The generated LOD models are derived from the meshes of the mods in your load order. They
 are for your own use; ask the mod's author before sharing them.
