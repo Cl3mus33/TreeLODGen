@@ -137,9 +137,11 @@ Everything printed is also written to `TreeLODGen.log` next to the exe.
 - **Trees without foliage** (dead trunks) get a LOD made of their reduced bark alone.
 - **PGPatcher.** PGPatcher rewrites tree meshes, which changes their CRC32. DynDOLOD still looks
   LOD models up by the CRC32 from before patching (recorded in `ParallaxGen_Diff.json`), so the
-  tool reads that file and names the models the same way. Run TreeLODGen after PGPatcher, and
-  again whenever PGPatcher's output changes. Before 1.0.3, most patched trees silently fell
-  back to billboards.
+  tool reads that file and names the models the same way. AnvilLOD looks them up by the CRC32
+  of the mesh as installed, so patched trees also get a copy of their models under that name;
+  each generator ignores the other's file. Run TreeLODGen after PGPatcher, and again whenever
+  PGPatcher's output changes. Before 1.0.3, most patched trees silently fell back to billboards
+  in DynDOLOD, and in 1.0.3 in AnvilLOD.
 - **Scaled models.** Many tree mods (Ulvenwald especially) scale or move the tree on a node of
   the NIF. The game applies that on every node except the root, whose transform it replaces
   with the placed reference's; the LOD models follow the same rule, with the result written
@@ -164,16 +166,15 @@ The models follow DynDOLOD's conventions (folder, `passthru_lod` names with the 
 CRC32, `Crown` and `Trunk` shape names). The tool was developed and tested with DynDOLOD 3.
 
 [AnvilLOD](https://www.nexusmods.com/skyrimspecialedition/mods/194477) reads the same files.
-Tried with AnvilLOD 0.2.14 and its "3D tree LOD" option on Tamriel: it matched every model by
-CRC32, generated without errors and the result loaded in game. What to know:
+Tried with AnvilLOD 0.2.56 and its "3D tree LOD" option on Tamriel, with PGPatcher: 43,148 of
+46,706 trees got a 3D model (DynDOLOD: 42,755 on the same load order), without errors. What to
+know:
 
-- AnvilLOD only gives LOD to trees that have a TexGen billboard. Trees made of animated
-  shapes only get none from TexGen by default: fill in the DynDOLOD folder in the window
-  (or `--dyndolod`), then run TexGen before AnvilLOD.
 - It uses the 3D model at LOD 4 and billboard cards farther out, so the lighter LOD 8 and
   LOD 16 models and the rule files written here are not used by it.
-- Its own estimate for these models on that load order was about 2.3 GB of LOD blocks; the
-  "Light" detail setting reduces that.
+- It can draw the billboards TexGen did not make itself ("Draw missing tree billboards");
+  TexGen is still recommended.
+- On that load order its LOD 4 blocks came to about 6.5 GB, close to DynDOLOD's.
 
 ## Licence
 

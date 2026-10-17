@@ -207,7 +207,8 @@ static class Generate
             else if (vfs.Resolve(relative) is not { } fullPath) status = "mesh not found";
             else
             {
-                crc = ParallaxGenDiff.LodCrc(patched, relative, NifUtil.Crc32(File.ReadAllBytes(fullPath))).ToString("X8");
+                var meshCrc = NifUtil.Crc32(File.ReadAllBytes(fullPath)).ToString("X8");
+                crc = ParallaxGenDiff.LodCrc(patched, relative, Convert.ToUInt32(meshCrc, 16)).ToString("X8");
                 var lodName = $"{Path.GetFileNameWithoutExtension(group.Key)}_{crc}passthru_lod.nif";
                 if (!all && existingLod.TryGetValue(lodName, out var lodSource)) status = $"has 3D LOD ({lodSource})";
                 else
@@ -225,6 +226,12 @@ static class Generate
                         foreach (var d in result.Density)
                             foliage[d.texture] = (d.size, d.tile);
                         generated.Add(group.Key);
+                        // DynDOLOD looks a PGPatcher-patched tree up by the CRC32 from before
+                        // patching, AnvilLOD by the CRC32 of the mesh as installed: a copy under
+                        // the second name serves both, and each ignores the other's file.
+                        if (meshCrc != crc)
+                            foreach (var model in Directory.EnumerateFiles(stageLod, $"{Path.GetFileNameWithoutExtension(group.Key)}_{crc}passthru_lod*.nif"))
+                                File.Copy(model, Path.Combine(stageLod, Path.GetFileName(model).Replace($"_{crc}passthru_lod", $"_{meshCrc}passthru_lod")), true);
                         Ui.TreeDone(Path.GetFileNameWithoutExtension(group.Key), Path.Combine(stageLod, $"{Path.GetFileNameWithoutExtension(group.Key)}_{crc}passthru_lod.nif"));
                     }
                     if (result.SkinnedOnly)
