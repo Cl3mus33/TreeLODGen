@@ -119,8 +119,8 @@ sealed class PreviewPanel : Panel
         float cos = MathF.Cos(_angle), sin = MathF.Sin(_angle);
         const float tilt = 0.22f; // seen from slightly above
         float cosT = MathF.Cos(tilt), sinT = MathF.Sin(tilt);
-        var scale = (Height - 70) * 0.92f;
-        float originX = Width / 2f, originY = (Height - 30) / 2f;
+        var scale = (Height - Dpi.P(70)) * 0.92f;
+        float originX = Width / 2f, originY = (Height - Dpi.P(30)) / 2f;
 
         using var leaf = new Pen(Color.FromArgb(105, Theme.Accent), 1f);
         using var wood = new Pen(Color.FromArgb(235, Theme.Orange), 1.4f);
@@ -137,8 +137,8 @@ sealed class PreviewPanel : Panel
             }
 
         using var name = new SolidBrush(Theme.Text);
-        g.DrawString(_model.Name, Font, name, 12, Height - 44);
-        g.DrawString($"LOD 4 model: crown {_model.CrownTris} triangles, trunk {_model.BarkTris}", Font, caption, 12, Height - 24);
+        g.DrawString(_model.Name, Font, name, Dpi.P(12), Height - Dpi.P(44));
+        g.DrawString($"LOD 4 model: crown {_model.CrownTris} triangles, trunk {_model.BarkTris}", Font, caption, Dpi.P(12), Height - Dpi.P(24));
     }
 }
 

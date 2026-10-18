@@ -9,7 +9,7 @@
     <!-- .NET 9 turns on hardware shadow stacks (CET) by default; Mod Organizer 2's virtual
          file system hooks crash a process started with them, before it reaches Main. -->
     <CETCompat>false</CETCompat>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <ApplicationIcon>TreeLODGen.ico</ApplicationIcon>
   </PropertyGroup>
 

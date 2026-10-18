@@ -30,18 +30,17 @@ sealed class MainForm : Form
     public MainForm()
     {
         Text = $"TreeLODGen {Program.Version}";
-        ClientSize = new Size(1000, 682);
+        ClientSize = Dpi.S(1000, 682);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Theme.Back;
         ForeColor = Theme.Text;
-        Font = new Font("Segoe UI", 9f);
-        AutoScaleDimensions = new SizeF(96f, 96f);
-        AutoScaleMode = AutoScaleMode.Dpi;
+        Font = Dpi.Font("Segoe UI", 9f);
+        AutoScaleMode = AutoScaleMode.None;
         try { if (Environment.ProcessPath is { } exe) Icon = Icon.ExtractAssociatedIcon(exe); } catch (ArgumentException) { } catch (IOException) { }
 
-        Add(new Label { Text = "TreeLODGen", Font = new Font("Segoe UI Semibold", 18f), ForeColor = Theme.Accent, AutoSize = true }, 20, 14);
+        Add(new Label { Text = "TreeLODGen", Font = Dpi.Font("Segoe UI Semibold", 18f), ForeColor = Theme.Accent, AutoSize = true }, 20, 14);
         Add(Caption("3D tree LOD models generated from the trees of your load order. Run it before your LOD generation."), 24, 54);
 
         Add(Caption("Game Data folder  (start the tool from your mod manager so that it shows your mods)"), 24, 90);
@@ -82,7 +81,7 @@ sealed class MainForm : Form
         _log.BorderStyle = BorderStyle.None;
         _log.BackColor = Theme.Panel;
         _log.ForeColor = Theme.Dim;
-        _log.Font = new Font("Consolas", 9f);
+        _log.Font = Dpi.Font("Consolas", 9f);
         _log.WordWrap = true;
         Add(_log, 24, 444, 576, 214);
 
@@ -274,9 +273,9 @@ sealed class MainForm : Form
 
     void Add(Control control, int x, int y, int width = 0, int height = 0)
     {
-        control.Location = new Point(x, y);
-        if (width > 0) control.Width = width;
-        if (height > 0) control.Height = height;
+        control.Location = Dpi.P(x, y);
+        if (width > 0) control.Width = Dpi.P(width);
+        if (height > 0) control.Height = Dpi.P(height);
         Controls.Add(control);
     }
 
@@ -291,7 +290,7 @@ sealed class MainForm : Form
         button.FlatAppearance.BorderColor = Theme.Grid;
         button.BackColor = primary ? Theme.Accent : Theme.Field;
         button.ForeColor = primary ? Theme.Back : Theme.Text;
-        if (primary) button.Font = new Font("Segoe UI Semibold", 10.5f);
+        if (primary) button.Font = Dpi.Font("Segoe UI Semibold", 10.5f);
         return button;
     }
 

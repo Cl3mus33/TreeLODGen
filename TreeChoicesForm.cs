@@ -21,29 +21,28 @@ sealed class TreeChoicesForm : Form
     {
         _trees = trees;
         Text = "Choose trees";
-        ClientSize = new Size(900, 640);
+        ClientSize = Dpi.S(900, 640);
         StartPosition = FormStartPosition.CenterParent;
         MinimizeBox = false;
         BackColor = Theme.Back;
         ForeColor = Theme.Text;
-        Font = new Font("Segoe UI", 9f);
-        AutoScaleDimensions = new SizeF(96f, 96f);
-        AutoScaleMode = AutoScaleMode.Dpi;
+        Font = Dpi.Font("Segoe UI", 9f);
+        AutoScaleMode = AutoScaleMode.None;
 
         var intro = new Label
         {
             Text = "3D models cost far more than billboards: copies placed x model size is what makes the LOD heavy. "
                  + "Trees left on \"DynDOLOD tree rule\" follow the tree rule set in DynDOLOD. Saving only rewrites the rules: run DynDOLOD again afterwards (TexGen is not needed).",
-            ForeColor = Theme.Dim, Location = new Point(16, 12), Size = new Size(868, 36),
+            ForeColor = Theme.Dim, Location = Dpi.P(16, 12), Size = Dpi.S(868, 36),
         };
         Controls.Add(intro);
 
         AddButton("Vanilla trees only", 16, 54, 150, () => SetAll(t => t.Vanilla ? TreeRules.Default : TreeRules.Billboard));
         AddButton("All DynDOLOD rule", 174, 54, 130, () => SetAll(_ => TreeRules.Default));
         AddButton("All billboards", 312, 54, 120, () => SetAll(_ => TreeRules.Billboard));
-        Controls.Add(new Label { Text = "Filter", ForeColor = Theme.Dim, AutoSize = true, Location = new Point(560, 60) });
-        _filter.Location = new Point(600, 56);
-        _filter.Width = 284;
+        Controls.Add(new Label { Text = "Filter", ForeColor = Theme.Dim, AutoSize = true, Location = Dpi.P(560, 60) });
+        _filter.Location = Dpi.P(600, 56);
+        _filter.Width = Dpi.P(284);
         _filter.TextChanged += (_, _) => ApplyFilter();
         Controls.Add(_filter);
 
@@ -64,7 +63,7 @@ sealed class TreeChoicesForm : Form
         _grid.CellValueChanged += (_, _) => UpdateSummary();
         _grid.CurrentCellDirtyStateChanged += (_, _) => { if (_grid.IsCurrentCellDirty) _grid.CommitEdit(DataGridViewDataErrorContexts.Commit); };
 
-        _summary.Location = new Point(16, 604);
+        _summary.Location = Dpi.P(16, 604);
         Controls.Add(_summary);
         AddButton("Cancel", 784, 596, 100, () => { DialogResult = DialogResult.Cancel; Close(); });
         var save = AddButton("Save and update rules", 604, 596, 172, Save);
@@ -77,8 +76,11 @@ sealed class TreeChoicesForm : Form
 
     void BuildGrid()
     {
-        _grid.Location = new Point(16, 92);
-        _grid.Size = new Size(868, 494);
+        _grid.Location = Dpi.P(16, 92);
+        _grid.Size = Dpi.S(868, 494);
+        _grid.RowTemplate.Height = Dpi.P(25);
+        _grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        _grid.ColumnHeadersHeight = Dpi.P(25);
         _grid.BackgroundColor = Theme.Panel;
         _grid.GridColor = Theme.Grid;
         _grid.BorderStyle = BorderStyle.None;
@@ -98,7 +100,7 @@ sealed class TreeChoicesForm : Form
 
         DataGridViewTextBoxColumn Text(string header, int width, bool number = false) => new()
         {
-            HeaderText = header, Width = width, ReadOnly = true,
+            HeaderText = header, Width = Dpi.P(width), ReadOnly = true,
             DefaultCellStyle = { Alignment = number ? DataGridViewContentAlignment.MiddleRight : DataGridViewContentAlignment.MiddleLeft },
         };
         _grid.Columns.Add(Text("Tree", 250));
@@ -112,7 +114,7 @@ sealed class TreeChoicesForm : Form
         size.ToolTipText = "Size of the LOD 4 model; every placed copy of the tree adds about this much to the LOD.";
         size.ValueType = typeof(int);
         _grid.Columns.Add(size);
-        var choice = new DataGridViewComboBoxColumn { HeaderText = "Use", Width = 190, FlatStyle = FlatStyle.Flat, DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox };
+        var choice = new DataGridViewComboBoxColumn { HeaderText = "Use", Width = Dpi.P(190), FlatStyle = FlatStyle.Flat, DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox };
         choice.Items.AddRange(Labels);
         choice.DefaultCellStyle.BackColor = Theme.Field;
         _grid.Columns.Add(choice);
@@ -123,7 +125,7 @@ sealed class TreeChoicesForm : Form
     {
         var button = new Button
         {
-            Text = text, Location = new Point(x, y), Size = new Size(width, 30), FlatStyle = FlatStyle.Flat,
+            Text = text, Location = Dpi.P(x, y), Size = Dpi.S(width, 30), FlatStyle = FlatStyle.Flat,
             BackColor = Theme.Field, ForeColor = Theme.Text, Cursor = Cursors.Hand,
         };
         button.FlatAppearance.BorderColor = Theme.Grid;
