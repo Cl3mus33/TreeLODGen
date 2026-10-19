@@ -7,6 +7,41 @@ namespace TreeLODGen;
 
 static class Program
 {
+    // Dev check for PlainLodShader: gives every shape of a tree the shader PGPatcher writes for
+    // PBR ("pbr"), Complex Material ("cm") or parallax ("parallax").
+    static int FakeShader(string input, string output, string mode)
+    {
+        var nif = new nifly.NifFile();
+        if (nif.Load(input) != 0) { Console.WriteLine($"cannot read {input}"); return 1; }
+        foreach (var shape in nif.GetShapes())
+        {
+            if (NifUtil.ShaderOf(nif, shape) is not { } shader) continue;
+            var dir = Path.GetDirectoryName(nif.GetTexturePathByIndex(shape, 0)) ?? "textures";
+            switch (mode)
+            {
+                case "pbr":
+                    shader.shaderFlags2 |= 1u << 23;
+                    nif.SetTextureSlot(shape, Path.Combine(dir, "fake_g.dds"), 2);
+                    nif.SetTextureSlot(shape, Path.Combine(dir, "fake_p.dds"), 3);
+                    nif.SetTextureSlot(shape, Path.Combine(dir, "fake_rmaos.dds"), 5);
+                    break;
+                case "cm":
+                    shader.shaderFlags1 |= 1u << 7;
+                    shader.SetShaderType(1);
+                    nif.SetTextureSlot(shape, Path.Combine("textures", "cubemaps", "fake_e.dds"), 4);
+                    nif.SetTextureSlot(shape, Path.Combine(dir, "fake_m.dds"), 5);
+                    break;
+                case "parallax":
+                    shader.shaderFlags1 |= 1u << 11;
+                    shader.SetShaderType(3);
+                    nif.SetTextureSlot(shape, Path.Combine(dir, "fake_p.dds"), 3);
+                    break;
+            }
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
+        return nif.Save(output) == 0 ? 0 : 1;
+    }
+
     [STAThread]
     static int Main(string[] args)
     {
@@ -39,6 +74,7 @@ static class Program
             switch (args[0].ToLowerInvariant())
             {
                 case "inspect": return Inspect.Run(args[1]);
+                case "fakeshader": return FakeShader(args[1], args[2], args[3]);
                 case "split": return Split.Run(args);
                 case "islands": return Islands.Report(args[1]);
                 case "vcolor": return VColor.Report(args[1]);

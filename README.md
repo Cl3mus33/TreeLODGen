@@ -146,6 +146,10 @@ Everything printed is also written to `TreeLODGen.log` next to the exe.
   the NIF. The game applies that on every node except the root, whose transform it replaces
   with the placed reference's; the LOD models follow the same rule, with the result written
   straight into their vertices, so distant trees match the size of the full ones.
+- **PBR, Complex Material and parallax trees.** The LOD models keep only the diffuse and normal
+  map of the full tree, with a plain shader. When PGPatcher (or a mod) gives trees a PBR,
+  Complex Material, environment map, parallax or glow map shader, copying it onto the LOD made
+  distant trees glow (before 1.0.6). Do not run PGPatcher on the LOD models: it rightly skips them.
 
 ## How it works
 

@@ -59,6 +59,8 @@ static class Inspect
                 Console.WriteLine(line);
                 Console.WriteLine($"  tex0: {nif.GetTexturePathByIndex(shape, 0)}");
                 Console.WriteLine($"  tex1: {nif.GetTexturePathByIndex(shape, 1)}");
+                for (uint slot = 2; slot < 8; slot++)
+                    if (nif.GetTexturePathByIndex(shape, slot) is { Length: > 0 } extra) Console.WriteLine($"  tex{slot}: {extra}");
             }
 
             var alpha = NifUtil.AlphaOf(nif, shape);

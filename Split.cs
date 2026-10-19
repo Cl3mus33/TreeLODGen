@@ -345,6 +345,11 @@ static class Split
                 ClampSmallUvOvershoot(dst, shape);
             }
             NifUtil.BakeTransform(dst, shape);
+            if (NifUtil.PlainLodShader(dst, shape) is { } removed && !result.Notes.Contains($"shader:{removed}"))
+            {
+                result.Notes.Add($"shader:{removed}");
+                log($"  NOTE: '{shape.name.get()}' had a {removed} shader -- the LOD keeps its diffuse and normal map only.");
+            }
         }
 
         // cloning a shape of a vanilla style tree drags parent nodes along; the shapes hang

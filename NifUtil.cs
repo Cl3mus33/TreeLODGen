@@ -83,6 +83,48 @@ static class NifUtil
         return shader == null ? null : Downcast<BSShaderProperty>(shader);
     }
 
+    const uint SLSF1_Specular = 1u << 0, SLSF1_EnvironmentMapping = 1u << 7, SLSF1_Parallax = 1u << 11,
+        SLSF1_EyeEnvironmentMapping = 1u << 17, SLSF1_ParallaxOcclusion = 1u << 28;
+    const uint SLSF2_GlowMap = 1u << 6, SLSF2_EnvMapLightFade = 1u << 15, SLSF2_Pbr = 1u << 23,
+        SLSF2_MultiLayerParallax = 1u << 24, SLSF2_SoftLighting = 1u << 25, SLSF2_RimLighting = 1u << 26,
+        SLSF2_BackLighting = 1u << 27;
+    // BSLightingShaderType values that need texture slots or effects a LOD model does not have
+    static readonly uint[] SpecialShaderTypes = { 1, 2, 3, 7, 11, 16 }; // envmap, glow, parallax, parallax occ., multilayer, eye envmap
+
+    // A LOD model gets a plain lighting shader: its diffuse and normal map, and nothing that the
+    // object LOD renderer does not handle. PGPatcher can turn the full tree into PBR (SLSF2
+    // Unused01, RMAOS and the like in slots 2-7), Complex Material (environment map) or
+    // parallax; copied as they are onto the LOD, those made distant trees glow. With PBR the
+    // normal map's alpha is not a specular mask, so specular goes too. Returns what was removed.
+    public static string? PlainLodShader(NifFile nif, NiShape shape)
+    {
+        if (ShaderOf(nif, shape) is not { } shader) return null;
+        uint f1 = shader.shaderFlags1, f2 = shader.shaderFlags2, type = shader.GetShaderType();
+        var pbr = (f2 & SLSF2_Pbr) != 0;
+        var removed = new List<string>();
+        if (pbr) removed.Add("PBR");
+        if ((f1 & (SLSF1_EnvironmentMapping | SLSF1_EyeEnvironmentMapping)) != 0 || type is 1 or 16) removed.Add("environment map");
+        if ((f1 & (SLSF1_Parallax | SLSF1_ParallaxOcclusion)) != 0 || (f2 & SLSF2_MultiLayerParallax) != 0 || type is 3 or 7 or 11) removed.Add("parallax");
+        if ((f2 & SLSF2_GlowMap) != 0 || type == 2) removed.Add("glow map");
+
+        f1 &= ~(SLSF1_EnvironmentMapping | SLSF1_Parallax | SLSF1_EyeEnvironmentMapping | SLSF1_ParallaxOcclusion);
+        f2 &= ~(SLSF2_GlowMap | SLSF2_EnvMapLightFade | SLSF2_Pbr | SLSF2_MultiLayerParallax);
+        if (pbr) f1 &= ~SLSF1_Specular;
+        if (removed.Count == 0) return null;
+
+        shader.shaderFlags1 = f1;
+        shader.shaderFlags2 = f2;
+        if (Array.IndexOf(SpecialShaderTypes, type) >= 0) shader.SetShaderType(0);
+        // slot 2 (rim/soft lighting map) and 7 (back lighting map) stay when their effect is
+        // still on and the textures are not PBR ones; every other slot past the normal map goes
+        for (uint slot = 2; slot < 8; slot++)
+        {
+            var keep = !pbr && ((slot == 2 && (f2 & (SLSF2_RimLighting | SLSF2_SoftLighting)) != 0) || (slot == 7 && (f2 & SLSF2_BackLighting) != 0));
+            if (!keep && nif.GetTexturePathByIndex(shape, slot) != "") nif.SetTextureSlot(shape, "", slot);
+        }
+        return string.Join("+", removed);
+    }
+
     public static NiAlphaProperty? AlphaOf(NifFile nif, NiShape shape)
     {
         return shape.HasAlphaProperty() ? nif.GetAlphaProperty(shape) : null;
