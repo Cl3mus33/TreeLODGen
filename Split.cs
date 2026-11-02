@@ -14,6 +14,8 @@ static class Split
     const string CrownRelDir = @"hybrid\input";
     public static string LevelInputDir(int level) => level == 0 ? CrownRelDir : $@"hybrid\input_{level}";
     public const string Lod3dRelDir = "lod3d";
+    // alpha threshold of crown shapes in the LOD models, see WriteStaticNif
+    const byte CrownAlphaThreshold = 32;
     const string ReplaceRelDir = @"DynDOLOD\Render\Replace";
     const string HybridOutRelDir = @"meshes\DynDOLOD\lod\trees";
 
@@ -345,6 +347,14 @@ static class Split
                 ClampSmallUvOvershoot(dst, shape);
             }
             NifUtil.BakeTransform(dst, shape);
+            // LOD models must carry no tree animation (DynDOLOD's 3D tree LOD model rules)
+            if (NifUtil.ShaderOf(dst, shape) is { } animated && (animated.shaderFlags2 & NifUtil.SLSF2_TreeAnim) != 0)
+                animated.shaderFlags2 &= ~NifUtil.SLSF2_TreeAnim;
+            // Crowns get a low alpha threshold, as in the 3D LOD models tree mod authors ship
+            // (NotWL: 32): DynDOLOD scales the atlas alpha to the model's threshold, and the full
+            // model's own (80-128) thinned distant crowns out
+            if (shape.name.get().Contains("Crown") && NifUtil.AlphaOf(dst, shape) is { } crownAlpha && crownAlpha.threshold > CrownAlphaThreshold)
+                crownAlpha.threshold = CrownAlphaThreshold;
             if (NifUtil.PlainLodShader(dst, shape) is { } removed && !result.Notes.Contains($"shader:{removed}"))
             {
                 result.Notes.Add($"shader:{removed}");
@@ -357,6 +367,12 @@ static class Split
         dst.DeleteUnreferencedNodes();
         foreach (var type in new[] { "BSMultiBoundNode", "BSMultiBound", "BSMultiBoundOBB", "NiSwitchNode", "BSTreeNode", "BSLeafAnimNode", "NiNode" })
             dst.GetHeader().DeleteBlockByType(type, type != "BSMultiBoundNode");
+        // nested leftovers (a NiSwitchNode under a NiNode, as in vanilla aspens) are not
+        // orphans, so the pass above keeps them; every node but the root goes, the shapes
+        // all hang off the root (DynDOLOD warns "LOD model contains NiSwitch block")
+        var rootId = dst.GetBlockID(dst.GetRootNode());
+        var leftovers = dst.GetNodes().Select(n => dst.GetBlockID(n)).Where(id => id != rootId).OrderByDescending(id => id).ToList();
+        foreach (var id in leftovers) dst.GetHeader().DeleteBlock(id);
 
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         if (dst.Save(path) != 0)

@@ -46,6 +46,17 @@ static class Inspect
             var uvs = nif.GetUvsForShape(shape);
             if (uvs.Count > 0)
                 Console.WriteLine($"  uv: u[{uvs.Min(v => v.u):F3},{uvs.Max(v => v.u):F3}] v[{uvs.Min(v => v.v):F3},{uvs.Max(v => v.v):F3}]");
+            // small shapes (billboard planes) are listed vertex by vertex
+            if (verts.Count <= 8)
+            {
+                var colors = new vectorColor4();
+                var hasColors = shape.HasVertexColors() && nif.GetColorsForShape(shape, colors) && colors.Count == verts.Count;
+                for (var i = 0; i < verts.Count; i++)
+                    Console.WriteLine($"    v{i}: ({verts[i].x:F2},{verts[i].y:F2},{verts[i].z:F2}) n=({normals![i].x:F2},{normals[i].y:F2},{normals[i].z:F2}) uv=({uvs[i].u:F2},{uvs[i].v:F2})" + (hasColors ? $" c=({colors[i].r:F2},{colors[i].g:F2},{colors[i].b:F2},{colors[i].a:F2})" : ""));
+                var tris = new vectorTriangle();
+                shape.GetTriangles(tris);
+                Console.WriteLine("    tris: " + string.Join(" ", tris.Select(t => $"({t.p1},{t.p2},{t.p3})")));
+            }
 
             var shader = NifUtil.ShaderOf(nif, shape);
             if (shader != null)

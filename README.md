@@ -146,10 +146,13 @@ Everything printed is also written to `TreeLODGen.log` next to the exe.
   the NIF. The game applies that on every node except the root, whose transform it replaces
   with the placed reference's; the LOD models follow the same rule, with the result written
   straight into their vertices, so distant trees match the size of the full ones.
-- **PBR, Complex Material and parallax trees.** The LOD models keep only the diffuse and normal
-  map of the full tree, with a plain shader. When PGPatcher (or a mod) gives trees a PBR,
-  Complex Material, environment map, parallax or glow map shader, copying it onto the LOD made
-  distant trees glow (before 1.0.6). Do not run PGPatcher on the LOD models: it rightly skips them.
+- **PBR, Complex Material and parallax trees.** The LOD models keep the diffuse and normal map
+  of the full tree, plus its RMAOS map when the tree is PBR: DynDOLOD then draws them with its
+  PBR shader and PBR atlas. Complex Material, environment map, parallax and glow map shaders are
+  dropped (copied onto the LOD, they made distant trees glow before 1.0.6), and so are the other
+  texture slots: DynDOLOD reads any texture in slot 2 as a glow map, which turned the leaves of
+  trees with a soft or rim lighting map into black cards before 1.0.7. Do not run PGPatcher on
+  the LOD models: it rightly skips them.
 
 ## How it works
 
