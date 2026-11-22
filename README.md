@@ -1,7 +1,7 @@
 # TreeLODGen
 
 
-> Checked in game with vanilla trees, Nordskog, Happy Little Trees, Ulvenwald and Wigfrid's Tree Replacer, with and without ENB and with PGPatcher. Not tested yet: Vortex, mods installed straight into Data. Please report problems with your tree mod's name and the `TreeLODGen_report.csv` from the output folder.
+> Checked in game with vanilla trees, Nordskog, Happy Little Trees, Ulvenwald, Wigfrid's Tree Replacer, WardenWood and Tomato's PBR Vanilla Trees, with and without ENB and with PGPatcher; users report it working with M.O.I.S.T. and on the GOG edition. Not tested yet: Vortex, mods installed straight into Data. Please report problems with your tree mod's name and the `TreeLODGen_report.csv` from the output folder.
 
 Generates 3D tree LOD models from the trees of your own load order, in the format DynDOLOD
 defined for them.
@@ -43,7 +43,8 @@ path test TexGen uses.
 ## Requirements
 
 - Skyrim Special Edition / Anniversary Edition.
-- DynDOLOD 3 with DynDOLOD Resources SE, used with ultra tree LOD.
+- DynDOLOD 3 with DynDOLOD Resources SE, used with ultra tree LOD (or AnvilLOD, see "Other
+  LOD generators").
 
 ## How to use
 
@@ -201,7 +202,8 @@ is provided alongside the release.
 - [BCnEncoder.NET](https://github.com/Nominom/BCnEncoder.NET) for decoding DDS textures.
 - [K4os.Compression.LZ4](https://github.com/MiloszKrajewski/K4os.Compression.LZ4) for BSA archives.
 - DynDOLOD, TexGen and LODGen are by Sheson; this tool only produces input files for them.
-- Mechanicalpanda and Tomato for their reports and in-game tests.
+- Mechanicalpanda and Tomato for their reports and in-game tests, and everyone who reported a
+  problem on Nexus and Discord.
 
 The generated LOD models are derived from the meshes of the mods in your load order. They
 are for your own use; ask the mod's author before sharing them.

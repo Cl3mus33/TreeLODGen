@@ -29,6 +29,30 @@ static class Mo2
         }
     }
 
+    // The game folder of the Mod Organizer 2 instance that started this tool (gamePath),
+    // so that a GOG or Epic game is used even when a Steam copy is registered too.
+    public static string? GameFolderOfLauncher()
+    {
+        if (!OperatingSystem.IsWindows()) return null;
+        try
+        {
+            if (SettingsOfLauncher() is not { } ini) return null;
+            foreach (var line in File.ReadAllLines(ini))
+            {
+                if (!line.StartsWith("gamePath=", StringComparison.OrdinalIgnoreCase)) continue;
+                var value = line["gamePath=".Length..].Trim();
+                if (value.StartsWith("@ByteArray(") && value.EndsWith(')')) value = value["@ByteArray(".Length..^1];
+                value = value.Replace(@"\\", @"\").Replace('/', '\\');
+                return Directory.Exists(value) ? value : null;
+            }
+            return null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
     // DynDOLOD's folder, when TexGen or DynDOLOD is one of the executables set up in the
     // Mod Organizer 2 instance that started this tool.
     public static string? DynDOLODFolderOfLauncher()

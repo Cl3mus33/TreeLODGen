@@ -28,12 +28,13 @@ static class Generate
 
           --output <folder>     where to write the mod (default: "TreeLODGen Output" in the mods folder
                                 of the Mod Organizer 2 instance in use, otherwise next to the tool)
-          --data <folder>       the game's Data folder (default: found in the registry).
+          --data <folder>       the game's Data folder (default: the game of the Mod Organizer 2
+                                instance in use, otherwise found in the registry, Steam or GOG).
                                 Start the tool through your mod manager so that Data shows your mods.
           --mo2 <folder>        read a Mod Organizer 2 instance directly instead (no need to start
                                 the tool through MO2); combine with --profile <name> (default: Default)
           --plugins <file>      plugins.txt to use with --data
-                                (default: %LOCALAPPDATA%\Skyrim Special Edition\plugins.txt)
+                                (default: %LOCALAPPDATA%\Skyrim Special Edition[ GOG| EPIC]\plugins.txt)
           --all                 also generate for trees that already have a 3D LOD in the load order
           --levels <list>       per LOD level 4,8,16: leaf cards kept : leaf area restored : bark triangles
                                 : leaf triangles a crown is never pruned below
@@ -144,7 +145,7 @@ static class Generate
         }
         else
         {
-            if (pluginsTxt == "") pluginsTxt = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Skyrim Special Edition", "plugins.txt");
+            if (pluginsTxt == "") pluginsTxt = PluginsTxtFor(data);
             if (!Announce(data, ref output, Mo2.ModsFolderOfLauncher(), all, rules)) return 0;
             Ui.Step(1, 4, "Reading the load order");
             loadOrder = Plugins.ActiveLoadOrder(data, pluginsTxt);
@@ -378,11 +379,34 @@ static class Generate
     public static string? FindGameData()
     {
         if (!OperatingSystem.IsWindows()) return null;
-        foreach (var key in new[] { @"SOFTWARE\WOW6432Node\Bethesda Softworks\Skyrim Special Edition", @"SOFTWARE\Bethesda Softworks\Skyrim Special Edition" })
+        // the game the Mod Organizer 2 instance manages comes first: a GOG player can also
+        // have a Steam copy registered (1m0ws on Nexus got a different, empty game)
+        if (Mo2.GameFolderOfLauncher() is { } game && Directory.Exists(Path.Combine(game, "Data"))) return Path.Combine(game, "Data");
+        foreach (var (key, value) in new[]
+        {
+            (@"SOFTWARE\WOW6432Node\Bethesda Softworks\Skyrim Special Edition", "Installed Path"),
+            (@"SOFTWARE\Bethesda Softworks\Skyrim Special Edition", "Installed Path"),
+            (@"SOFTWARE\WOW6432Node\GOG.com\Games\1711230643", "path"), // GOG Anniversary Edition
+            (@"SOFTWARE\WOW6432Node\GOG.com\Games\1162721350", "path"), // GOG Special Edition
+        })
         {
             using var registry = Registry.LocalMachine.OpenSubKey(key);
-            if (registry?.GetValue("Installed Path") is string path && Directory.Exists(Path.Combine(path, "Data"))) return Path.Combine(path, "Data");
+            if (registry?.GetValue(value) is string path && Directory.Exists(Path.Combine(path, "Data"))) return Path.Combine(path, "Data");
         }
         return null;
+    }
+
+    // The game keeps its plugin list in a folder named after the store it came from (the
+    // same names Mod Organizer 2 uses): plain for Steam, with " GOG" or " EPIC" otherwise.
+    public static string PluginsTxtFor(string data)
+    {
+        var game = Path.GetDirectoryName(Path.GetFullPath(data).TrimEnd('\\')) ?? "";
+        var suffix = !Directory.Exists(game) ? ""
+            : File.Exists(Path.Combine(game, "Galaxy64.dll")) || Directory.EnumerateFiles(game, "goggame-*.info").Any() ? " GOG"
+            : File.Exists(Path.Combine(game, "EOSSDK-Win64-Shipping.dll")) ? " EPIC"
+            : "";
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var path = Path.Combine(local, "Skyrim Special Edition" + suffix, "plugins.txt");
+        return File.Exists(path) || suffix == "" ? path : Path.Combine(local, "Skyrim Special Edition", "plugins.txt");
     }
 }
